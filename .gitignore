@@ -1,0 +1,28 @@
+# WordPress core — no se versiona, se reinstala desde wordpress.org
+/wp-admin/
+/wp-includes/
+/wp-*.php
+/index.php
+/xmlrpc.php
+/license.txt
+/readme.html
+/.htaccess
+/.maintenance
+
+# Plugins de terceros — no se versionan, se reinstalan desde su fuente
+/wp-content/plugins/
+
+# Temas por defecto de WordPress — no son custom, no se versionan
+/wp-content/themes/twentytwentyfive/
+/wp-content/themes/twentytwentyfour/
+/wp-content/themes/twentytwentythree/
+
+# Medios subidos por el usuario
+/wp-content/uploads/
+
+# Cache y temporales
+/wp-content/cache/
+/wp-content/upgrade/
+
+# OS
+.DS_Store
