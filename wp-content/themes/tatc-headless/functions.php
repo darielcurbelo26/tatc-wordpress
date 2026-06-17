@@ -534,7 +534,14 @@ function tatc_get_custom_content() {
                     $global_audio = is_numeric($audio_field_val) ? wp_get_attachment_url($audio_field_val) : $audio_field_val;
                 }
 
+                // ACF field bucket names ('front'/'left'/'right'/'back') stay as-is —
+                // they're just storage slots. The camera in a-sweet-kid-online.js can
+                // only pan +/-90deg (3 walls reachable: left/center/right), so the
+                // JSON output translates each bucket to the position the frontend
+                // actually understands. 'right' bucket previously mapped to the
+                // unreachable 4th wall — now it correctly lands on the right wall.
                 $walls = array('front', 'left', 'right', 'back');
+                $wall_label_map = array('front' => 'left', 'left' => 'center', 'right' => 'right', 'back' => 'right');
                 $art_id = 0;
                 foreach ($walls as $wall) {
                     $img_id = get_field("wall_{$wall}_image");
@@ -543,7 +550,7 @@ function tatc_get_custom_content() {
                         if ($img_url) {
                             $gallery_3d_artworks[] = array(
                                 'id' => $art_id++,
-                                'wall' => $wall,
+                                'wall' => $wall_label_map[$wall] ?? $wall,
                                 'title' => get_field("wall_{$wall}_title") ?: '',
                                 'alt' => get_field("wall_{$wall}_desc") ?: '',
                                 'src' => $img_url
