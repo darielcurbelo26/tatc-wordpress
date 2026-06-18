@@ -18,6 +18,27 @@ add_action('init', function() {
         'menu_icon' => 'dashicons-portfolio',
         'show_in_rest' => true,
     ));
+
+    // Page Gate: cada entrada protege una página del frontend con su propio
+    // password. El password nunca se expone vía REST — solo se compara
+    // server-side en tatc_verify_page_password(). Para proteger una página
+    // nueva, solo hace falta crear una entrada aquí, sin tocar código.
+    register_post_type('tatc_gate', array(
+        'labels' => array(
+            'name' => 'Page Gates',
+            'singular_name' => 'Page Gate',
+            'add_new' => 'Añadir nuevo Gate',
+            'add_new_item' => 'Añadir nuevo Gate',
+            'edit_item' => 'Editar Gate',
+        ),
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => true,
+        'supports' => array('title'),
+        'has_archive' => false,
+        'menu_icon' => 'dashicons-lock',
+        'show_in_rest' => false,
+    ));
 });
 
 // 3. Configurar campos de ACF automáticamente
@@ -259,6 +280,37 @@ add_action('acf/init', function() {
                     'param' => 'post_type',
                     'operator' => '==',
                     'value' => 'project',
+                ),
+            ),
+        ),
+    ));
+
+    // Campos para Page Gate
+    acf_add_local_field_group(array(
+        'key' => 'group_tatc_gate',
+        'title' => 'Configuración del Gate',
+        'fields' => array(
+            array(
+                'key' => 'field_gate_page_file',
+                'label' => 'Página a proteger',
+                'name' => 'page_file',
+                'type' => 'text',
+                'instructions' => 'Nombre exacto del archivo, ej: a-sweet-kid-online.html',
+            ),
+            array(
+                'key' => 'field_gate_password',
+                'label' => 'Password',
+                'name' => 'password',
+                'type' => 'text',
+                'instructions' => 'Este valor nunca se expone públicamente — solo se compara en el servidor cuando alguien intenta entrar.',
+            ),
+        ),
+        'location' => array(
+            array(
+                array(
+                    'param' => 'post_type',
+                    'operator' => '==',
+                    'value' => 'tatc_gate',
                 ),
             ),
         ),
@@ -609,6 +661,42 @@ function tatc_get_custom_content() {
     }
 
     $response = rest_ensure_response($data);
+    $response->header('Access-Control-Allow-Origin', '*');
+    return $response;
+}
+
+// 7. Verificación de password server-side para páginas protegidas (Page Gate)
+// El password real nunca sale de WordPress: el frontend solo recibe true/false.
+add_action('rest_api_init', function () {
+    register_rest_route('tatc/v1', '/verify-password', array(
+        'methods' => 'POST',
+        'callback' => 'tatc_verify_page_password',
+        'permission_callback' => '__return_true',
+        'args' => array(
+            'page' => array('required' => true, 'type' => 'string'),
+            'password' => array('required' => true, 'type' => 'string'),
+        ),
+    ));
+});
+
+function tatc_verify_page_password(WP_REST_Request $request) {
+    $page = sanitize_text_field($request->get_param('page'));
+    $password = (string) $request->get_param('password');
+
+    $gates = get_posts(array(
+        'post_type' => 'tatc_gate',
+        'posts_per_page' => 1,
+        'meta_key' => 'page_file',
+        'meta_value' => $page,
+    ));
+
+    $ok = false;
+    if (!empty($gates)) {
+        $stored = (string) get_field('password', $gates[0]->ID);
+        $ok = $stored !== '' && hash_equals($stored, $password);
+    }
+
+    $response = rest_ensure_response(array('ok' => $ok));
     $response->header('Access-Control-Allow-Origin', '*');
     return $response;
 }
