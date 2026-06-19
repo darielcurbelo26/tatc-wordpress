@@ -532,10 +532,18 @@ add_action('admin_menu', function () {
 
 add_action('admin_init', function () {
     register_setting('tatc_content_settings', 'tatc_artist', array('type' => 'array', 'default' => array()));
+    register_setting('tatc_content_settings', 'tatc_global', array('type' => 'array', 'default' => array()));
+    register_setting('tatc_content_settings', 'tatc_home', array('type' => 'array', 'default' => array()));
+    register_setting('tatc_content_settings', 'tatc_security_gate', array('type' => 'array', 'default' => array()));
 });
 
 function tatc_render_content_settings_page() {
     $artist = get_option('tatc_artist', array());
+    $global = get_option('tatc_global', array());
+    $nav = $global['nav'] ?? array();
+    $social = $global['social'] ?? array();
+    $home = get_option('tatc_home', array());
+    $security_gate = get_option('tatc_security_gate', array());
     ?>
     <div class="wrap">
         <h1>TATC Content</h1>
@@ -563,6 +571,78 @@ function tatc_render_content_settings_page() {
                 <tr>
                     <th><label for="artist_bio2">Bio 2</label></th>
                     <td><textarea id="artist_bio2" name="tatc_artist[bio2]" rows="4" class="large-text"><?php echo esc_textarea($artist['bio2'] ?? ''); ?></textarea></td>
+                </tr>
+            </table>
+
+            <h2>Global</h2>
+            <table class="form-table">
+                <tr>
+                    <th><label for="global_brand">Brand</label></th>
+                    <td><input type="text" id="global_brand" name="tatc_global[brand]" class="regular-text" value="<?php echo esc_attr($global['brand'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="global_tagline">Tagline</label></th>
+                    <td><input type="text" id="global_tagline" name="tatc_global[tagline]" class="regular-text" value="<?php echo esc_attr($global['tagline'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="global_year">Year</label></th>
+                    <td><input type="text" id="global_year" name="tatc_global[year]" class="small-text" value="<?php echo esc_attr($global['year'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th>Nav — Blog label</th>
+                    <td><input type="text" name="tatc_global[nav][blog]" class="regular-text" value="<?php echo esc_attr($nav['blog'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th>Nav — Projects label</th>
+                    <td><input type="text" name="tatc_global[nav][projects]" class="regular-text" value="<?php echo esc_attr($nav['projects'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th>Nav — Info label</th>
+                    <td><input type="text" name="tatc_global[nav][info]" class="regular-text" value="<?php echo esc_attr($nav['info'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th>Social — Twitter/X URL</th>
+                    <td><input type="text" name="tatc_global[social][twitter]" class="regular-text" value="<?php echo esc_attr($social['twitter'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th>Social — Email (mailto:...)</th>
+                    <td><input type="text" name="tatc_global[social][email]" class="regular-text" value="<?php echo esc_attr($social['email'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th>Social — Instagram URL</th>
+                    <td><input type="text" name="tatc_global[social][instagram]" class="regular-text" value="<?php echo esc_attr($social['instagram'] ?? ''); ?>"></td>
+                </tr>
+            </table>
+
+            <h2>Home</h2>
+            <table class="form-table">
+                <tr>
+                    <th><label for="home_meta_title">Meta Title</label></th>
+                    <td><input type="text" id="home_meta_title" name="tatc_home[meta_title]" class="regular-text" value="<?php echo esc_attr($home['meta_title'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="home_loader_text">Loader Text</label></th>
+                    <td><textarea id="home_loader_text" name="tatc_home[loader_text]" rows="3" class="large-text"><?php echo esc_textarea($home['loader_text'] ?? ''); ?></textarea></td>
+                </tr>
+                <tr>
+                    <th><label for="home_loader_skip_label">Loader Skip Label</label></th>
+                    <td><input type="text" id="home_loader_skip_label" name="tatc_home[loader_skip_label]" class="regular-text" value="<?php echo esc_attr($home['loader_skip_label'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="home_hero_headline">Hero Headline</label></th>
+                    <td><input type="text" id="home_hero_headline" name="tatc_home[hero_headline]" class="regular-text" value="<?php echo esc_attr($home['hero_headline'] ?? ''); ?>"></td>
+                </tr>
+            </table>
+
+            <h2>Gate (textos del password gate)</h2>
+            <table class="form-table">
+                <tr>
+                    <th><label for="gate_title">Gate Title</label></th>
+                    <td><input type="text" id="gate_title" name="tatc_security_gate[gate_title]" class="regular-text" value="<?php echo esc_attr($security_gate['gate_title'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="gate_description">Gate Description</label></th>
+                    <td><input type="text" id="gate_description" name="tatc_security_gate[gate_description]" class="regular-text" value="<?php echo esc_attr($security_gate['gate_description'] ?? ''); ?>"></td>
                 </tr>
             </table>
 
@@ -598,6 +678,21 @@ function tatc_get_custom_content() {
     $tatc_artist = get_option('tatc_artist', array());
     if (!empty($tatc_artist)) {
         $data['artist'] = array_merge($data['artist'] ?? array(), $tatc_artist);
+    }
+
+    $tatc_global = get_option('tatc_global', array());
+    if (!empty($tatc_global)) {
+        $data['global'] = array_merge($data['global'] ?? array(), $tatc_global);
+    }
+
+    $tatc_home = get_option('tatc_home', array());
+    if (!empty($tatc_home)) {
+        $data['home'] = array_merge($data['home'] ?? array(), $tatc_home);
+    }
+
+    $tatc_security_gate = get_option('tatc_security_gate', array());
+    if (!empty($tatc_security_gate)) {
+        $data['security'] = array_merge($data['security'] ?? array(), $tatc_security_gate);
     }
 
     // --- A. GESTIÓN DE PROYECTOS ---
