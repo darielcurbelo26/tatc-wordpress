@@ -695,6 +695,13 @@ function tatc_get_custom_content() {
         $data['security'] = array_merge($data['security'] ?? array(), $tatc_security_gate);
     }
 
+    // --- A-1. BLOG / "THE GIST" — usa las Entradas nativas de WordPress ---
+    list($tatc_blog_posts, $tatc_post_entries) = tatc_build_blog_and_posts();
+    if (!empty($tatc_blog_posts)) {
+        $data['blog']['posts'] = $tatc_blog_posts;
+        $data['post']['posts'] = $tatc_post_entries;
+    }
+
     // --- A. GESTIÓN DE PROYECTOS ---
     $projects_query = new WP_Query(array(
         'post_type' => 'project',
@@ -818,6 +825,93 @@ function tatc_get_custom_content() {
     $response = rest_ensure_response($data);
     $response->header('Access-Control-Allow-Origin', '*');
     return $response;
+}
+
+// Convierte los bloques de Gutenberg de una Entrada en el formato body[] que
+// post.html espera: { type: paragraph|image|pullquote, ... }. Bloques que no
+// son ninguno de estos tres se ignoran (no hay un tipo equivalente todavía).
+function tatc_parse_post_body($post_content) {
+    $body = array();
+
+    foreach (parse_blocks($post_content) as $block) {
+        $name = $block['blockName'];
+        $html = $block['innerHTML'] ?? '';
+
+        if ($name === 'core/paragraph') {
+            $text = trim(wp_strip_all_tags($html));
+            if ($text !== '') {
+                $body[] = array('type' => 'paragraph', 'text' => $text);
+            }
+        } elseif ($name === 'core/image') {
+            if (preg_match('/<img[^>]+src="([^"]+)"/', $html, $m_src)) {
+                $alt = '';
+                if (preg_match('/alt="([^"]*)"/', $html, $m_alt)) {
+                    $alt = $m_alt[1];
+                }
+                $caption = '';
+                if (preg_match('/<figcaption[^>]*>(.*?)<\/figcaption>/s', $html, $m_cap)) {
+                    $caption = trim(wp_strip_all_tags($m_cap[1]));
+                }
+                $body[] = array('type' => 'image', 'src' => $m_src[1], 'alt' => $alt, 'caption' => $caption);
+            }
+        } elseif ($name === 'core/quote' || $name === 'core/pullquote') {
+            $text = trim(wp_strip_all_tags($html));
+            if ($text !== '') {
+                $body[] = array('type' => 'pullquote', 'text' => $text);
+            }
+        }
+    }
+
+    return $body;
+}
+
+// Arma blog.posts[] (listado) y post.posts{} (detalle) a partir de las
+// Entradas nativas de WordPress, en la misma forma que content.json espera.
+// slug = post_name, subject = nombre de la primera categoría asignada.
+function tatc_build_blog_and_posts() {
+    $posts = get_posts(array(
+        'post_type'      => 'post',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ));
+
+    $blog_posts   = array();
+    $post_entries = array();
+
+    foreach ($posts as $p) {
+        $slug  = $p->post_name;
+        $date  = get_the_date('d.m.y', $p);
+        $title = get_the_title($p);
+
+        $summary = has_excerpt($p)
+            ? get_the_excerpt($p)
+            : wp_trim_words(wp_strip_all_tags($p->post_content), 30);
+
+        $blog_posts[] = array(
+            'slug'    => $slug,
+            'date'    => $date,
+            'title'   => $title,
+            'summary' => $summary,
+            'url'     => 'post.html?slug=' . $slug,
+        );
+
+        $categories = get_the_category($p->ID);
+        $subject    = !empty($categories) ? $categories[0]->name : '';
+
+        $post_entries[$slug] = array(
+            'meta_title'    => 'TATC — ' . $title,
+            'date'          => $date,
+            'subject'       => $subject,
+            'title'         => $title,
+            'body'          => tatc_parse_post_body($p->post_content),
+            'footer_label'  => 'TATC — THE GIST',
+            'footer_credit' => 'ISEEASI — 2026',
+        );
+    }
+
+    return array($blog_posts, $post_entries);
 }
 
 // 6b. "Visit Site" en la barra de admin debe llevar al frontend real, no al
