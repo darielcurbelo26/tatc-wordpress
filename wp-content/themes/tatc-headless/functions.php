@@ -820,6 +820,16 @@ function tatc_get_custom_content() {
     return $response;
 }
 
+// 6b. "Visit Site" en la barra de admin debe llevar al frontend real, no al
+// WordPress headless (que no tiene nada que mostrar visualmente). Actualizar
+// esta URL cuando se migre a producción (ver GUIA-PRODUCCION.md).
+define('TATC_FRONTEND_URL', 'https://darielcurbelo26.github.io/cms-system-asi/');
+
+add_action('admin_bar_menu', function ($wp_admin_bar) {
+    $wp_admin_bar->add_node(array('id' => 'site-name', 'href' => TATC_FRONTEND_URL));
+    $wp_admin_bar->add_node(array('id' => 'view-site', 'parent' => 'site-name', 'href' => TATC_FRONTEND_URL, 'title' => 'Visit Site'));
+}, 81);
+
 // 7. Verificación de password server-side para páginas protegidas (Page Gate)
 // El password real nunca sale de WordPress: el frontend solo recibe true/false.
 add_action('rest_api_init', function () {
