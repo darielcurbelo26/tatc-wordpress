@@ -521,6 +521,57 @@ add_action('admin_init', function() {
     }
 });
 
+// 4b. Pantalla de ajustes "TATC Content" — secciones de content.json que se
+// migran a gestión por WordPress (artist, global, home, gate texts). Cada
+// sección se guarda como un option propio con la MISMA forma que su
+// contraparte en content.json — tatc_get_custom_content() las usa para
+// sobreescribir esa sección si el option ya fue guardado al menos una vez.
+add_action('admin_menu', function () {
+    add_options_page('TATC Content', 'TATC Content', 'manage_options', 'tatc-content-settings', 'tatc_render_content_settings_page');
+});
+
+add_action('admin_init', function () {
+    register_setting('tatc_content_settings', 'tatc_artist', array('type' => 'array', 'default' => array()));
+});
+
+function tatc_render_content_settings_page() {
+    $artist = get_option('tatc_artist', array());
+    ?>
+    <div class="wrap">
+        <h1>TATC Content</h1>
+        <form method="post" action="options.php">
+            <?php settings_fields('tatc_content_settings'); ?>
+
+            <h2>Artist</h2>
+            <table class="form-table">
+                <tr>
+                    <th><label for="artist_meta_title">Meta Title</label></th>
+                    <td><input type="text" id="artist_meta_title" name="tatc_artist[meta_title]" class="regular-text" value="<?php echo esc_attr($artist['meta_title'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="artist_label">Label</label></th>
+                    <td><input type="text" id="artist_label" name="tatc_artist[label]" class="regular-text" value="<?php echo esc_attr($artist['label'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="artist_name">Name</label></th>
+                    <td><input type="text" id="artist_name" name="tatc_artist[name]" class="regular-text" value="<?php echo esc_attr($artist['name'] ?? ''); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="artist_bio1">Bio 1</label></th>
+                    <td><textarea id="artist_bio1" name="tatc_artist[bio1]" rows="4" class="large-text"><?php echo esc_textarea($artist['bio1'] ?? ''); ?></textarea></td>
+                </tr>
+                <tr>
+                    <th><label for="artist_bio2">Bio 2</label></th>
+                    <td><textarea id="artist_bio2" name="tatc_artist[bio2]" rows="4" class="large-text"><?php echo esc_textarea($artist['bio2'] ?? ''); ?></textarea></td>
+                </tr>
+            </table>
+
+            <?php submit_button(); ?>
+        </form>
+    </div>
+    <?php
+}
+
 // 5. Registrar la API REST /wp-json/tatc/v1/content
 add_action('rest_api_init', function () {
     register_rest_route('tatc/v1', '/content', array(
@@ -539,6 +590,15 @@ function tatc_get_custom_content() {
     
     $json_content = file_get_contents($json_path);
     $data = json_decode($json_content, true);
+
+    // --- A0. SECCIONES GESTIONADAS DESDE "TATC Content" (wp-admin) ---
+    // Solo sobreescribe si el option ya se guardó al menos una vez (evita
+    // que content.json se vacíe antes de que alguien abra la pantalla de
+    // ajustes por primera vez).
+    $tatc_artist = get_option('tatc_artist', array());
+    if (!empty($tatc_artist)) {
+        $data['artist'] = array_merge($data['artist'] ?? array(), $tatc_artist);
+    }
 
     // --- A. GESTIÓN DE PROYECTOS ---
     $projects_query = new WP_Query(array(
