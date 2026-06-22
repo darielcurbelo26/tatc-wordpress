@@ -915,9 +915,8 @@ function tatc_build_blog_and_posts() {
 }
 
 // 6b. "Visit Site" en la barra de admin debe llevar al frontend real, no al
-// WordPress headless (que no tiene nada que mostrar visualmente). Actualizar
-// esta URL cuando se migre a producción (ver GUIA-PRODUCCION.md).
-define('TATC_FRONTEND_URL', 'https://darielcurbelo26.github.io/cms-system-asi/');
+// WordPress headless (que no tiene nada que mostrar visualmente).
+define('TATC_FRONTEND_URL', 'https://throughalltheclutter.com/');
 
 add_action('admin_bar_menu', function ($wp_admin_bar) {
     $wp_admin_bar->add_node(array('id' => 'site-name', 'href' => TATC_FRONTEND_URL));
