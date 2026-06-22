@@ -24,5 +24,12 @@
 /wp-content/cache/
 /wp-content/upgrade/
 
+# Stubs de WordPress core ("Silence is golden") — se reinstalan con WP
+/wp-content/index.php
+/wp-content/themes/index.php
+
+# Local by Flywheel (helper de debug, no existe en hosting real)
+/local-xdebuginfo.php
+
 # OS
 .DS_Store
