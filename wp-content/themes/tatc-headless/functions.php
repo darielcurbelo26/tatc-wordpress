@@ -304,6 +304,20 @@ add_action('acf/init', function() {
                 'type' => 'text',
                 'instructions' => 'Este valor nunca se expone públicamente — solo se compara en el servidor cuando alguien intenta entrar.',
             ),
+            array(
+                'key' => 'field_gate_title',
+                'label' => 'Título mostrado en la pantalla de acceso',
+                'name' => 'gate_title',
+                'type' => 'text',
+                'instructions' => 'Si lo dejas vacío, se usa el título general por defecto (Settings → TATC Content).',
+            ),
+            array(
+                'key' => 'field_gate_description',
+                'label' => 'Texto mostrado en la pantalla de acceso',
+                'name' => 'gate_description',
+                'type' => 'text',
+                'instructions' => 'Si lo dejas vacío, se usa el texto general por defecto (Settings → TATC Content).',
+            ),
         ),
         'location' => array(
             array(
@@ -705,6 +719,7 @@ function tatc_get_custom_content() {
     if (!empty($tatc_gates)) {
         if (!isset($data['security'])) { $data['security'] = array(); }
         if (!isset($data['security']['pages'])) { $data['security']['pages'] = array(); }
+        if (!isset($data['security']['gates'])) { $data['security']['gates'] = array(); }
         foreach ($tatc_gates as $gate) {
             $page_file = get_field('page_file', $gate->ID);
             if ($page_file) {
@@ -715,6 +730,16 @@ function tatc_get_custom_content() {
                 $page_file = basename($path ?: $page_file);
                 if ($page_file) {
                     $data['security']['pages'][$page_file] = 'private';
+                    // Título/descripción propios de este gate — si están vacíos,
+                    // password.html usa el texto general por defecto.
+                    $gate_title = get_field('gate_title', $gate->ID);
+                    $gate_description = get_field('gate_description', $gate->ID);
+                    if ($gate_title || $gate_description) {
+                        $data['security']['gates'][$page_file] = array(
+                            'gate_title' => $gate_title ?: '',
+                            'gate_description' => $gate_description ?: '',
+                        );
+                    }
                 }
             }
         }
