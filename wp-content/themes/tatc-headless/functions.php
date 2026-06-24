@@ -695,6 +695,31 @@ function tatc_get_custom_content() {
         $data['security'] = array_merge($data['security'] ?? array(), $tatc_security_gate);
     }
 
+    // Qué páginas están protegidas se decide por la existencia de un tatc_gate,
+    // no por una lista estática — así crear un gate en wp-admin protege la
+    // página de inmediato, sin tocar content.json ni redesplegar nada.
+    $tatc_gates = get_posts(array(
+        'post_type' => 'tatc_gate',
+        'posts_per_page' => -1,
+    ));
+    if (!empty($tatc_gates)) {
+        if (!isset($data['security'])) { $data['security'] = array(); }
+        if (!isset($data['security']['pages'])) { $data['security']['pages'] = array(); }
+        foreach ($tatc_gates as $gate) {
+            $page_file = get_field('page_file', $gate->ID);
+            if ($page_file) {
+                // Tolerar que alguien pegue una URL completa en vez del nombre
+                // del archivo (ej. "https://dominio.com/blog.html") — nos
+                // quedamos solo con "blog.html".
+                $path = wp_parse_url($page_file, PHP_URL_PATH);
+                $page_file = basename($path ?: $page_file);
+                if ($page_file) {
+                    $data['security']['pages'][$page_file] = 'private';
+                }
+            }
+        }
+    }
+
     // --- A-1. BLOG / "THE GIST" — usa las Entradas nativas de WordPress ---
     list($tatc_blog_posts, $tatc_post_entries) = tatc_build_blog_and_posts();
     if (!empty($tatc_blog_posts)) {
